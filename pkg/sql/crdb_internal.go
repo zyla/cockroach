@@ -760,7 +760,9 @@ var crdbInternalClusterQueriesTable = virtualSchemaTable{
 }
 
 func populateQueriesTable(
-	ctx context.Context, addRow func(...tree.Datum) error, response *serverpb.ListSessionsResponse,
+	ctx context.Context,
+	addRow func(...tree.Datum) error,
+	response *serverpb.ListSessionsResponse,
 ) error {
 	for _, session := range response.Sessions {
 		for _, query := range session.ActiveQueries {
@@ -857,7 +859,9 @@ var crdbInternalClusterSessionsTable = virtualSchemaTable{
 }
 
 func populateSessionsTable(
-	ctx context.Context, addRow func(...tree.Datum) error, response *serverpb.ListSessionsResponse,
+	ctx context.Context,
+	addRow func(...tree.Datum) error,
+	response *serverpb.ListSessionsResponse,
 ) error {
 	for _, session := range response.Sessions {
 		// Generate active_queries and oldest_query_start
@@ -1680,6 +1684,7 @@ var crdbInternalZonesTable = virtualSchemaTable{
 	schema: `
 CREATE TABLE crdb_internal.zones (
   zone_id          INT NOT NULL,
+  zone_name        STRING,
   cli_specifier    STRING,
   config_yaml      STRING NOT NULL,
   config_sql       STRING, -- this column can be NULL if there is no specifier syntax
