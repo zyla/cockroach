@@ -160,7 +160,7 @@ TAR     ?= tar
 GOPATH := $(shell $(GO) env GOPATH)
 
 ifneq "$(or $(findstring :,$(GOPATH)),$(findstring ;,$(GOPATH)))" ""
-$(error GOPATHs with multiple entries are not supported)
+$(error GOPATHs with multiple entries are not supported: $(GOPATH))
 endif
 
 GOPATH := $(realpath $(GOPATH))
