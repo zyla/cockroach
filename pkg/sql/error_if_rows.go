@@ -14,6 +14,8 @@ import (
 	"context"
 
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
+	"github.com/cockroachdb/cockroach/pkg/util/log"
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 // errorIfRowsNode wraps another planNode and returns an error if the wrapped
@@ -43,7 +45,13 @@ func (n *errorIfRowsNode) Next(params runParams) (bool, error) {
 		return false, err
 	}
 	if ok {
-		return false, n.mkErr(n.plan.Values())
+		err := n.mkErr(n.plan.Values())
+		log.Errorf(params.ctx, "MEH %+v\n", err)
+		if sp := opentracing.SpanFromContext(params.ctx); sp != nil {
+			sp.SetTag("error", true)
+			sp.SetTag("omfg", true)
+		}
+		return false, err
 	}
 	return false, nil
 }
