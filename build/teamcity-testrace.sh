@@ -10,24 +10,8 @@ export TMPDIR=$PWD/artifacts/testrace
 mkdir -p "$TMPDIR"
 
 tc_start_block "Determine changed packages"
-if tc_release_branch; then
-	pkgspec=./pkg/...
-  echo "On release branch ($TC_BUILD_BRANCH), so running testrace on all packages ($pkgspec)"
-else
-  pkgspec=$(changed_go_pkgs)
-	if [[ -z "$pkgspec" ]]; then
-		echo "PR #$TC_BUILD_BRANCH has no changed packages; skipping race detector tests"
-		exit 0
-	fi
-  if [[ $pkgspec == *"./pkg/sql/opt"* ]]; then
-    # If one opt package was changed, run all opt packages (the optimizer puts
-    # various checks behind the race flag to keep them out of release builds).
-    echo "$pkgspec" | sed 's$./pkg/sql/opt/[^ ]*$$g'
-    pkgspec=$(echo "$pkgspec" | sed 's$./pkg/sql/opt[^ ]*$$g')
-    pkgspec="$pkgspec ./pkg/sql/opt/..."
-  fi
-	echo "PR #$TC_BUILD_BRANCH has changed packages; running race detector tests on $pkgspec"
-fi
+pkgspec=./pkg/...
+echo "On release branch ($TC_BUILD_BRANCH), so running testrace on all packages ($pkgspec)"
 tc_end_block "Determine changed packages"
 
 tc_start_block "Compile C dependencies"
