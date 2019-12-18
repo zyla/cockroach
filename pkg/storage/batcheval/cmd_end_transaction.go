@@ -170,6 +170,7 @@ func declareKeysEndTransaction(
 func EndTransaction(
 	ctx context.Context, batch engine.ReadWriter, cArgs CommandArgs, resp roachpb.Response,
 ) (result.Result, error) {
+	log.Infof(ctx, "!!! EndTransaction")
 	args := cArgs.Args.(*roachpb.EndTransactionRequest)
 	h := cArgs.Header
 	ms := cArgs.Stats

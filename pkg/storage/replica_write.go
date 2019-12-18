@@ -350,6 +350,8 @@ func (r *Replica) evaluateWriteBatchWithLocalRetries(
 	spans *spanset.SpanSet,
 	canForwardTimestamp bool,
 ) (batch engine.Batch, br *roachpb.BatchResponse, res result.Result, pErr *roachpb.Error) {
+	log.Infof(ctx, "!!! evaluateWriteBatchWithLocalRetries: %s. canFwd: %t", ba,
+		canForwardTimestamp)
 	if canForwardTimestamp && ba.Txn != nil {
 		// For transactional requests, the batch's timestamp and the transaction's
 		// timestamps have to be kept in sync. However, for now, the code below is

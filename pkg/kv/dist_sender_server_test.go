@@ -36,6 +36,8 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/hlc"
 	"github.com/cockroachdb/cockroach/pkg/util/leaktest"
 	"github.com/cockroachdb/cockroach/pkg/util/log"
+	"github.com/cockroachdb/cockroach/pkg/util/tracing"
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -2471,6 +2473,39 @@ func TestTxnCoordSenderRetries(t *testing.T) {
 				b := txn.NewBatch()
 				b.CPut("a", "cput", strToValue("orig"))
 				return txn.CommitInBatch(ctx, b) // will be a 1PC, won't get auto retry
+			},
+			expFailure: "unexpected value", // The CPut cannot succeed.
+		},
+		{
+			// This test is like the previous one in that the cannot commit at the
+			// updated timestamp, but this time the final EndTransaction would put the
+			// transaction in the STAGING state instead of COMMITTED.
+			name: "write too old with failed cput in staging commit",
+			beforeTxnStart: func(ctx context.Context, db *client.DB) error {
+				return db.Put(ctx, "a", "orig")
+			},
+			afterTxnStart: func(ctx context.Context, db *client.DB) error {
+				return db.Put(ctx, "a", "put")
+			},
+			retryable: func(ctx context.Context, txn *client.Txn) error {
+				log.Infof(ctx, "!!! test txn")
+				tracer := tracing.NewTracer()
+				sp := tracer.StartSpan("test", tracing.Recordable)
+				tracing.StartRecording(sp, tracing.SingleNodeRecording)
+				ctx = opentracing.ContextWithSpan(ctx, sp)
+				tracing.StartRecording(sp, tracing.SingleNodeRecording)
+
+				if err := txn.Put(ctx, "aother", "another put"); err != nil {
+					return err
+				}
+				b := txn.NewBatch()
+				b.Put("a", "final value")
+				// !!! b.CPut("a", "cput", strToValue("put"))
+				err := txn.CommitInBatch(ctx, b)
+				log.Infof(ctx, "!!! test got err: %v", err)
+				rec := tracing.GetRecording(sp)
+				log.Infof(context.TODO(), rec.String())
+				return err
 			},
 			expFailure: "unexpected value", // The CPut cannot succeed.
 		},

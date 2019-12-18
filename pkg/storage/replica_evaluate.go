@@ -148,6 +148,7 @@ func evaluateBatch(
 	ba *roachpb.BatchRequest,
 	readOnly bool,
 ) (*roachpb.BatchResponse, result.Result, *roachpb.Error) {
+	log.Infof(ctx, "!!! evaluateBatch: %s", ba)
 	// NB: Don't mutate BatchRequest directly.
 	baReqs := ba.Requests
 	baHeader := ba.Header
@@ -280,6 +281,7 @@ func evaluateBatch(
 					// WriteTooOldError.
 					batcheval.CanForwardCommitTimestampWithoutRefresh(baHeader.Txn, et)
 				if !canCommitDespiteWTOE {
+					log.Infof(ctx, "!!! commit short-circuit")
 					return nil, result, writeTooOldState.err
 				}
 			}
@@ -317,6 +319,7 @@ func evaluateBatch(
 					writeTooOldState.err.GetDetail().(*roachpb.WriteTooOldError).ActualTimestamp.Forward(
 						tErr.ActualTimestamp)
 				} else {
+					log.Infof(ctx, "!!! evaluateBatch got WTOE at index: %d - %s", index, args)
 					writeTooOldState.err = pErr
 				}
 
@@ -368,9 +371,13 @@ func evaluateBatch(
 		}
 	}
 
+	if writeTooOldState.err != nil && baHeader.Txn != nil && baHeader.Txn.Status == roachpb.STAGING {
+		log.Infof(ctx, "!!! wtoe in staging")
+	}
 	// If there was an EndTransaction in the batch that finalized the transaction,
 	// the WriteTooOld status has been fully processed and we can discard the error.
-	if baHeader.Txn != nil && baHeader.Txn.Status.IsFinalizedOrStaging() {
+	// !!! if baHeader.Txn != nil && baHeader.Txn.Status.IsFinalizedOrStaging() {
+	if baHeader.Txn != nil && baHeader.Txn.Status.IsFinalized() {
 		writeTooOldState.err = nil
 	}
 
