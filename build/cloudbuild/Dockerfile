@@ -5,4 +5,6 @@ WORKDIR $GOPATH/src/github.com/cockroachdb/cockroach
 
 COPY . .
 
+RUN git submodule update --init --recursive
+
 RUN make
