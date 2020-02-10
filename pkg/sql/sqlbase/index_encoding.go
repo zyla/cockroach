@@ -1105,7 +1105,7 @@ func writeColumnValues(
 func EncodeSecondaryIndexes(
 	tableDesc *TableDescriptor,
 	indexes []IndexDescriptor,
-    whereExprs []TypedExpr,
+    whereExprs []tree.TypedExpr,
     evalCtx *tree.EvalContext,
 	colMap map[ColumnID]int,
 	values []tree.Datum,
@@ -1114,6 +1114,9 @@ func EncodeSecondaryIndexes(
 	for i := range indexes {
         if whereExprs[i] != nil {
             val, err := whereExprs[i].Eval(evalCtx)
+            if err != nil {
+                return nil, err
+            }
             if val == tree.DBoolFalse {
                 continue
             }
