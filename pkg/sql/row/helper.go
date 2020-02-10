@@ -24,6 +24,7 @@ type rowHelper struct {
 	// Secondary indexes.
 	Indexes      []sqlbase.IndexDescriptor
 	indexEntries []sqlbase.IndexEntry
+    indexWhereExprs []tree.TypedExpr
 
 	// Computed during initialization for pretty-printing.
 	primIndexValDirs []encoding.Direction
@@ -33,6 +34,8 @@ type rowHelper struct {
 	primaryIndexKeyPrefix []byte
 	primaryIndexCols      map[sqlbase.ColumnID]struct{}
 	sortedColumnFamilies  map[sqlbase.FamilyID][]sqlbase.ColumnID
+
+    evalCtx *tree.EvalContext
 }
 
 func newRowHelper(
@@ -88,11 +91,8 @@ func (rh *rowHelper) encodePrimaryIndex(
 func (rh *rowHelper) encodeSecondaryIndexes(
 	colIDtoRowIndex map[sqlbase.ColumnID]int, values []tree.Datum,
 ) (secondaryIndexEntries []sqlbase.IndexEntry, err error) {
-	if len(rh.indexEntries) != len(rh.Indexes) {
-		rh.indexEntries = make([]sqlbase.IndexEntry, len(rh.Indexes))
-	}
 	rh.indexEntries, err = sqlbase.EncodeSecondaryIndexes(
-		rh.TableDesc.TableDesc(), rh.Indexes, colIDtoRowIndex, values, rh.indexEntries)
+		rh.TableDesc.TableDesc(), rh.Indexes, rh.indexWhereExprs, rh.evalCtx, colIDtoRowIndex, values, rh.indexEntries)
 	if err != nil {
 		return nil, err
 	}

@@ -1117,7 +1117,7 @@ func EncodeSecondaryIndexes(
             if err != nil {
                 return nil, err
             }
-            if val == tree.DBoolFalse {
+            if val != tree.DBoolTrue {
                 continue
             }
         }
