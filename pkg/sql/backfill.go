@@ -1478,7 +1478,7 @@ func runSchemaChangesInTxn(
 				doneColumnBackfill = true
 
 			case *sqlbase.DescriptorMutation_Index:
-				if err := indexBackfillInTxn(ctx, planner.Txn(), immutDesc, traceKV); err != nil {
+				if err := indexBackfillInTxn(ctx, planner.Txn(), immutDesc, traceKV, planner.EvalContext()); err != nil {
 					return err
 				}
 
@@ -1775,9 +1775,10 @@ func columnBackfillInTxn(
 // reuse an existing client.Txn safely.
 func indexBackfillInTxn(
 	ctx context.Context, txn *client.Txn, tableDesc *sqlbase.ImmutableTableDescriptor, traceKV bool,
+    evalCtx *tree.EvalContext,
 ) error {
 	var backfiller backfill.IndexBackfiller
-	if err := backfiller.Init(tableDesc); err != nil {
+	if err := backfiller.Init(evalCtx, tableDesc); err != nil {
 		return err
 	}
 	sp := tableDesc.PrimaryIndexSpan()

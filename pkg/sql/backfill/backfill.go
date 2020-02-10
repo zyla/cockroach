@@ -406,7 +406,7 @@ func (ib *IndexBackfiller) BuildIndexEntriesChunk(
 		return nil, nil, err
 	}
 
-  var indexWhereExprs []*tree.TypedExpr
+  var indexWhereExprs []tree.TypedExpr
 
   // Parse and typecheck where exprs
 	for i := range ib.added {
@@ -423,7 +423,7 @@ func (ib *IndexBackfiller) BuildIndexEntriesChunk(
       if err != nil {
         return nil, nil, err
       }
-      indexWhereExprs[i] = &normalizedExpr
+      indexWhereExprs[i] = normalizedExpr
     }
   }
 
@@ -447,9 +447,9 @@ func (ib *IndexBackfiller) BuildIndexEntriesChunk(
 		// indexes which can append entries to the end of the slice. If we don't do this, then everything
 		// EncodeSecondaryIndexes appends to secondaryIndexEntries for a row, would stay in the slice for
 		// subsequent rows and we would then have duplicates in entries on output.
-		buffer = buffer[:len(ib.added)]
+		buffer = buffer[:0]
 		if buffer, err = sqlbase.EncodeSecondaryIndexes(
-			tableDesc.TableDesc(), ib.added, ib.colIdxMap,
+			tableDesc.TableDesc(), ib.added, indexWhereExprs, ib.evalCtx, ib.colIdxMap,
 			ib.rowVals, buffer); err != nil {
 			return nil, nil, err
 		}

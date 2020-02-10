@@ -1100,19 +1100,25 @@ func writeColumnValues(
 
 // EncodeSecondaryIndexes encodes key/values for the secondary indexes. colMap
 // maps ColumnIDs to indices in `values`. secondaryIndexEntries is the return
-// value (passed as a parameter so the caller can reuse between rows) and is
-// expected to be the same length as indexes.
+// value (passed as a parameter so the caller can reuse between rows).
+// Entries will be created only for indexes whose WHERE condition matches the row.
 func EncodeSecondaryIndexes(
 	tableDesc *TableDescriptor,
 	indexes []IndexDescriptor,
+    whereExprs []TypedExpr,
+    evalCtx *tree.EvalContext,
 	colMap map[ColumnID]int,
 	values []tree.Datum,
 	secondaryIndexEntries []IndexEntry,
 ) ([]IndexEntry, error) {
-	if len(secondaryIndexEntries) != len(indexes) {
-		panic("Length of secondaryIndexEntries is not equal to the number of indexes.")
-	}
 	for i := range indexes {
+        if whereExprs[i] != nil {
+            val, err := whereExprs[i].Eval(evalCtx)
+            if val == tree.DBoolFalse {
+                continue
+            }
+        }
+
 		entries, err := EncodeSecondaryIndex(tableDesc, &indexes[i], colMap, values)
 		if err != nil {
 			return secondaryIndexEntries, err
