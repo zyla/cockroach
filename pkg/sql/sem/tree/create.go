@@ -112,6 +112,7 @@ type CreateIndex struct {
 	Storing     NameList
 	Interleave  *InterleaveDef
 	PartitionBy *PartitionBy
+  Where       Expr
 }
 
 // Format implements the NodeFormatter interface.
@@ -155,6 +156,10 @@ func (node *CreateIndex) Format(ctx *FmtCtx) {
 	if node.PartitionBy != nil {
 		ctx.FormatNode(node.PartitionBy)
 	}
+    if node.Where != nil {
+		ctx.WriteString(" WHERE ")
+        ctx.FormatNode(node.Where)
+    }
 }
 
 // TableDef represents a column, index or constraint definition within a CREATE

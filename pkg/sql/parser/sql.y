@@ -959,6 +959,7 @@ func newNameFromStr(s string) *tree.Name {
 %type <*tree.UpdateExpr> single_set_clause
 %type <tree.AsOfClause> as_of_clause opt_as_of_clause
 %type <tree.Expr> opt_changefeed_sink
+%type <tree.Expr> opt_idx_where
 
 %type <str> explain_option_name
 %type <[]string> explain_option_list
@@ -5190,6 +5191,7 @@ create_index_stmt:
       Interleave: $12.interleave(),
       PartitionBy: $13.partitionBy(),
       Inverted: $7.bool(),
+      Where:   $13.expr(),
     }
   }
 | CREATE opt_unique INDEX IF NOT EXISTS index_name ON table_name opt_using_gin_btree '(' index_params ')' opt_storing opt_interleave opt_partition_by opt_idx_where
@@ -5205,6 +5207,7 @@ create_index_stmt:
       Interleave:  $15.interleave(),
       PartitionBy: $16.partitionBy(),
       Inverted:    $10.bool(),
+      Where:       $17.expr(),
     }
   }
 | CREATE opt_unique INVERTED INDEX opt_index_name ON table_name '(' index_params ')' opt_storing opt_interleave opt_partition_by opt_idx_where
@@ -5219,6 +5222,7 @@ create_index_stmt:
       Storing:     $11.nameList(),
       Interleave:  $12.interleave(),
       PartitionBy: $13.partitionBy(),
+      Where:       $14.expr(),
     }
   }
 | CREATE opt_unique INVERTED INDEX IF NOT EXISTS index_name ON table_name '(' index_params ')' opt_storing opt_interleave opt_partition_by opt_idx_where
@@ -5234,13 +5238,17 @@ create_index_stmt:
       Storing:     $14.nameList(),
       Interleave:  $15.interleave(),
       PartitionBy: $16.partitionBy(),
+      Where:       $17.expr(),
     }
   }
 | CREATE opt_unique INDEX error // SHOW HELP: CREATE INDEX
 
 opt_idx_where:
   /* EMPTY */ { /* no error */ }
-| WHERE error { return unimplementedWithIssue(sqllex, 9683) }
+| WHERE a_expr
+  {
+    $$.val = $1
+  }
 
 opt_using_gin_btree:
   USING name

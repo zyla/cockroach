@@ -1016,6 +1016,7 @@ type IndexDescriptor struct {
 	// As of now, this includes the existing secondary index encoding, or the primary index encoding.
 	// N.B. This field is only recognized on secondary indexes.
 	EncodingType IndexDescriptorEncodingType `protobuf:"varint,19,opt,name=encoding_type,json=encodingType,casttype=IndexDescriptorEncodingType" json:"encoding_type"`
+	WhereExpr *string `protobuf:"bytes,20,opt,name=where_expr,json=whereExpr" json:"where_expr,omitempty"`
 }
 
 func (m *IndexDescriptor) Reset()         { *m = IndexDescriptor{} }

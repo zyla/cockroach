@@ -22,6 +22,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
 	"github.com/cockroachdb/cockroach/pkg/sql/sqlbase"
 	"github.com/cockroachdb/cockroach/pkg/sql/types"
+	"github.com/cockroachdb/cockroach/pkg/sql/parser"
 	"github.com/cockroachdb/cockroach/pkg/util"
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
@@ -299,6 +300,8 @@ type IndexBackfiller struct {
 
 	types   []types.T
 	rowVals tree.Datums
+
+	evalCtx *tree.EvalContext
 }
 
 // ContainsInvertedIndex returns true if backfilling an inverted index.
@@ -312,7 +315,8 @@ func (ib *IndexBackfiller) ContainsInvertedIndex() bool {
 }
 
 // Init initializes an IndexBackfiller.
-func (ib *IndexBackfiller) Init(desc *sqlbase.ImmutableTableDescriptor) error {
+func (ib *IndexBackfiller) Init(evalCtx *tree.EvalContext, desc *sqlbase.ImmutableTableDescriptor) error {
+  ib.evalCtx = evalCtx
 	numCols := len(desc.Columns)
 	cols := desc.Columns
 	if len(desc.Mutations) > 0 {
@@ -401,6 +405,27 @@ func (ib *IndexBackfiller) BuildIndexEntriesChunk(
 		log.Errorf(ctx, "scan error: %s", err)
 		return nil, nil, err
 	}
+
+  var indexWhereExprs []*tree.TypedExpr
+
+  // Parse and typecheck where exprs
+	for i := range ib.added {
+    if ib.added[i].WhereExpr != nil {
+      parsedExpr, err := parser.ParseExpr(*ib.added[i].WhereExpr)
+      if err != nil {
+        return nil, nil, err
+      }
+      typedExpr, err := tree.TypeCheck(parsedExpr, nil, types.Bool)
+      if err != nil {
+        return nil, nil, err
+      }
+      normalizedExpr, err := ib.evalCtx.NormalizeExpr(typedExpr)
+      if err != nil {
+        return nil, nil, err
+      }
+      indexWhereExprs[i] = &normalizedExpr
+    }
+  }
 
 	buffer := make([]sqlbase.IndexEntry, len(ib.added))
 	for i := int64(0); i < chunkSize; i++ {

@@ -78,6 +78,11 @@ func MakeIndexDescriptor(n *tree.CreateIndex) (*sqlbase.IndexDescriptor, error) 
 	if err := indexDesc.FillColumns(n.Columns); err != nil {
 		return nil, err
 	}
+
+    if n.Where {
+        indexDesc.WhereExpr = tree.Serialize(n.Where)
+    }
+
 	return &indexDesc, nil
 }
 

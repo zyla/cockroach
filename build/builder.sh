@@ -42,7 +42,7 @@ if [ "$(uname)" = "Darwin" ]; then
   cached_volume_mode=:cached
 fi
 
-GOPATH=$(go env GOPATH)
+GOPATH=~/.gopath
 gopath0=${GOPATH%%:*}
 gocache=${GOCACHEPATH-$gopath0}
 
